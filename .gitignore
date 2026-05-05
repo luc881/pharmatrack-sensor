@@ -1,0 +1,14 @@
+# Arduino build output
+build/
+*.bin
+*.elf
+*.map
+*.hex
+
+# Arduino IDE
+*.bak
+.DS_Store
+
+# Credenciales / configuración local
+secrets.h
+config_local.h
