@@ -7,7 +7,7 @@
   #include <WiFiManager.h>        // tzapu/WiFiManager
                                                                                              
   // ── Configuración ──────────────────────────────────────────────
-  const char* API_URL   = "https://api.farmaciaselene.com/api/v1/sensor-readings/";          
+  const char* API_URL   = "https://api.farmaciaselene.com/api/v1/sensor-readings";          
   const char* DEVICE_ID = "esp32-farmacia-01";              
                                                                                              
   const unsigned long INTERVALO_MS = 30000;  // 30 segundos

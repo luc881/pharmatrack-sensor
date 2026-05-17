@@ -55,6 +55,6 @@ Single `.ino` file with three main responsibilities:
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
-| `API_URL` | `https://api.farmaciaselene.com/api/v1/sensor-readings/` | Backend endpoint |
+| `API_URL` | `https://api.farmaciaselene.com/api/v1/sensor-readings` | Backend endpoint |
 | `DEVICE_ID` | `"esp32-farmacia-01"` | Identifies this unit in the API |
 | `INTERVALO_MS` | `30000` | Polling interval (ms) |

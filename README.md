@@ -50,6 +50,6 @@ arduino-cli monitor -p /dev/cu.usbserial-* --config baudrate=115200
 
 | Constante | Valor por defecto | Descripción |
 |-----------|-------------------|-------------|
-| `API_URL` | `https://api.farmaciaselene.com/api/v1/sensor-readings/` | Endpoint de la API |
+| `API_URL` | `https://api.farmaciaselene.com/api/v1/sensor-readings` | Endpoint de la API |
 | `DEVICE_ID` | `esp32-farmacia-01` | Identificador del dispositivo |
 | `INTERVALO_MS` | `30000` | Intervalo de envío en ms |
