@@ -1,9 +1,9 @@
-  #include <Wire.h>                                                                          
-  #include <WiFi.h>                      
-  #include <HTTPClient.h>                                                                    
-  #include <ArduinoJson.h>                                                                   
-  #include <Adafruit_AHTX0.h>                                                                
-  #include <WiFiClientSecure.h>                                                              
+  #include <Wire.h>
+  #include <WiFi.h>
+  #include <HTTPClient.h>
+  #include <ArduinoJson.h>
+  #include <Adafruit_AHTX0.h>
+  #include <WiFiClientSecure.h>
   #include <WiFiManager.h>        // tzapu/WiFiManager
                                                                                              
   // ── Configuración ──────────────────────────────────────────────
@@ -16,10 +16,9 @@
   #define SDA_PIN    8
   #define SCL_PIN    9
   #define RESET_PIN  0   // Botón BOOT del ESP32
-  #define LED_PIN    2   // LED integrado del ESP32
                                                                                              
   // ── Objetos ────────────────────────────────────────────────────
-  Adafruit_AHTX0 aht;                                                                        
+  Adafruit_AHTX0 aht;
   WiFiManager    wm;                                                                         
    
   // ── Resetear credenciales (botón BOOT 3 seg) ───────────────────                         
@@ -77,9 +76,7 @@
     Serial.println("\n── PharmaTrack Sensor v2.0 (WiFiManager) ──");
                                                                                              
     pinMode(RESET_PIN, INPUT_PULLUP);
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
-                                                                                             
+
     // Revisar si se quiere resetear antes de conectar                                       
     checkResetButton();
                                                                                              
@@ -106,7 +103,7 @@
       ESP.restart();
     }                                                                                        
                                                             
-    Serial.printf("Conectado — IP: %s\n", WiFi.localIP().toString().c_str());                
+    Serial.printf("Conectado — IP: %s\n", WiFi.localIP().toString().c_str());
   }
                                                                                              
   // ── Loop ───────────────────────────────────────────────────────
