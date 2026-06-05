@@ -1,140 +1,243 @@
-  #include <Wire.h>                                                                          
-  #include <WiFi.h>                      
-  #include <HTTPClient.h>                                                                    
-  #include <ArduinoJson.h>                                                                   
-  #include <Adafruit_AHTX0.h>                                                                
-  #include <WiFiClientSecure.h>                                                              
-  #include <WiFiManager.h>        // tzapu/WiFiManager
-                                                                                             
-  // ── Configuración ──────────────────────────────────────────────
-  const char* API_URL   = "https://api.farmaciaselene.com/api/v1/sensor-readings/";          
-  const char* DEVICE_ID = "esp32-farmacia-01";              
-                                                                                             
-  const unsigned long INTERVALO_MS = 30000;  // 30 segundos
-                                                                                             
-  // ── Pines ──────────────────────────────────────────────────────                         
-  #define SDA_PIN    8
-  #define SCL_PIN    9                                                                       
-  #define RESET_PIN  0   // Botón BOOT del ESP32            
-                                                                                             
-  // ── Objetos ────────────────────────────────────────────────────
-  Adafruit_AHTX0 aht;                                                                        
-  WiFiManager    wm;                                                                         
-   
-  // ── Resetear credenciales (botón BOOT 3 seg) ───────────────────                         
-  void checkResetButton() {                                 
-    if (digitalRead(RESET_PIN) == LOW) {                                                     
-      Serial.println("Botón BOOT presionado — esperando 3 segundos...");                     
-      delay(3000);
-      if (digitalRead(RESET_PIN) == LOW) {                                                   
-        Serial.println("Borrando credenciales WiFi y reiniciando...");                       
-        wm.resetSettings();
-        delay(500);                                                                          
-        ESP.restart();                                                                       
-      }
-    }                                                                                        
-  }                                                         
+#include <Wire.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <Adafruit_AHTX0.h>
+#include <WiFiClientSecure.h>
+#include <WiFiManager.h>
+#include <U8g2lib.h>
 
-  // ── Envío a la API ─────────────────────────────────────────────
-  void enviarLectura(float temperatura, float humedad) {
-    if (WiFi.status() != WL_CONNECTED) return;                                               
-   
-    WiFiClientSecure client;                                                                 
-    client.setInsecure();  // HTTPS sin verificar certificado
-                                                                                             
-    HTTPClient http;
-    http.begin(client, API_URL);                                                             
-    http.addHeader("Content-Type", "application/json");     
+// ── Configuración ──────────────────────────────────────────────
+const char* API_URL   = "https://api.farmaciaselene.com/api/v1/sensor-readings/";
+const char* DEVICE_ID = "esp32-farmacia-01";
+const unsigned long INTERVALO_MS = 30000;
 
-    JsonDocument doc;
-    doc["temperature"] = round(temperatura * 10.0) / 10.0;
-    doc["humidity"]    = round(humedad * 10.0) / 10.0;                                       
-    doc["device_id"]   = DEVICE_ID;
-                                                                                             
-    String body;                                            
-    serializeJson(doc, body);
+// ── Pines ──────────────────────────────────────────────────────
+// Bus 0 (Wire): AHT10 (0x38) + Display Temperatura (0x3C) — sin conflicto de direcciones
+#define SDA_PIN   8
+#define SCL_PIN   9
+// Bus 1 (Wire1): Display Humedad
+#define SDA1_PIN  6
+#define SCL1_PIN  7
+// Software I²C: Display Conexión
+#define SDA2_PIN  4
+#define SCL2_PIN  5
+// Botón BOOT
+#define RESET_PIN 0
 
-    Serial.printf("Enviando → %.1f°C  %.1f%%  ", temperatura, humedad);                      
-   
-    int codigo = http.POST(body);                                                            
-                                                            
-    if (codigo == 201 || codigo == 200) {
-      Serial.println("OK");
-    } else if (codigo > 0) {                                                                 
-      Serial.printf("HTTP %d: %s\n", codigo, http.getString().c_str());
-    } else {                                                                                 
-      Serial.printf("Error: %s\n", http.errorToString(codigo).c_str());
-    }                                                                                        
-   
-    http.end();                                                                              
-  }                                                         
+// ── Displays (U8g2, 128×64 px) ────────────────────────────────
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C     dispTemp (U8G2_R0, U8X8_PIN_NONE, SCL_PIN,  SDA_PIN);
+U8G2_SSD1306_128X64_NONAME_F_2ND_HW_I2C dispHum  (U8G2_R0, U8X8_PIN_NONE, SCL1_PIN, SDA1_PIN);
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C     dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
 
-  // ── Setup ──────────────────────────────────────────────────────
-  void setup() {
-    Serial.begin(115200);
-    delay(1000);
-    Serial.println("\n── PharmaTrack Sensor v2.0 (WiFiManager) ──");
-                                                                                             
-    pinMode(RESET_PIN, INPUT_PULLUP);
-                                                                                             
-    // Revisar si se quiere resetear antes de conectar                                       
-    checkResetButton();
-                                                                                             
-    // Inicializar sensor                                                                    
-    Wire.begin(SDA_PIN, SCL_PIN);
-    if (!aht.begin()) {                                                                      
-      Serial.println("ERROR: AHT10 no detectado. Verifica el cableado.");
-      Serial.println("SDA → GPIO8   SCL → GPIO9   VCC → 3.3V   GND → GND");
-      while (true) delay(1000);                                                              
-    }
-    Serial.println("AHT10 detectado correctamente");                                         
-                                                            
-    // Configurar WiFiManager                                                                
-    wm.setConfigPortalTimeout(180);   // Portal abierto 3 minutos, luego reinicia
-    wm.setConnectTimeout(30);         // 30 seg intentando conectar a la red guardada        
-    wm.setAPClientCheck(true);        // Mantiene portal abierto mientras haya cliente conectado                                                                                  
-                                                                                             
-    Serial.println("Conectando al WiFi guardado...");                                        
-                                                            
-    // autoConnect: si tiene red guardada la usa, si no abre el AP "PharmaTrack-Sensor"      
-    if (!wm.autoConnect("PharmaTrack-Sensor")) {
-      Serial.println("No se pudo conectar. Reiniciando...");                                 
-      delay(3000);                                                                           
+// ── Objetos ────────────────────────────────────────────────────
+Adafruit_AHTX0 aht;
+WiFiManager    wm;
+
+// ── Estado global ──────────────────────────────────────────────
+bool apiOk = false;
+
+// ──────────────────────────────────────────────────────────────
+// Helpers de display
+// ──────────────────────────────────────────────────────────────
+
+void centrar(U8G2 &d, int y, const char* s) {
+  d.drawStr((128 - d.getStrWidth(s)) / 2, y, s);
+}
+
+// Pantalla de texto genérico (splash / errores)
+void mensaje(U8G2 &d, const char* l1, const char* l2 = nullptr) {
+  d.clearBuffer();
+  d.setFont(u8g2_font_6x10_tf);
+  centrar(d, l2 ? 28 : 35, l1);
+  if (l2) centrar(d, 42, l2);
+  d.sendBuffer();
+}
+
+/*
+  Layout de dispTemp y dispHum:
+  ┌──────────────────────────┐
+  │      TEMP (°C)           │  ← 6x10, y=10
+  │──────────────────────────│  ← línea y=13
+  │                          │
+  │          23.5            │  ← logisoso32, baseline y=54
+  │                          │
+  └──────────────────────────┘
+*/
+void mostrarTemperatura(float val) {
+  char num[8];
+  dtostrf(val, 5, 1, num);
+
+  dispTemp.clearBuffer();
+  dispTemp.setFont(u8g2_font_6x10_tf);
+  centrar(dispTemp, 10, "TEMP (\xb0""C)");
+  dispTemp.drawHLine(0, 13, 128);
+  dispTemp.setFont(u8g2_font_logisoso32_tf);
+  centrar(dispTemp, 54, num);
+  dispTemp.sendBuffer();
+}
+
+void mostrarHumedad(float val) {
+  char num[8];
+  dtostrf(val, 5, 1, num);
+
+  dispHum.clearBuffer();
+  dispHum.setFont(u8g2_font_6x10_tf);
+  centrar(dispHum, 10, "HUMEDAD (%)");
+  dispHum.drawHLine(0, 13, 128);
+  dispHum.setFont(u8g2_font_logisoso32_tf);
+  centrar(dispHum, 54, num);
+  dispHum.sendBuffer();
+}
+
+/*
+  Layout de dispConex:
+  ┌──────────────────────────┐
+  │           RED            │  ← y=10
+  │──────────────────────────│  ← y=13
+  │ WiFi:  OK / ---          │  ← y=27
+  │ 192.168.x.x              │  ← y=39 (solo si conectado)
+  │ API:   OK / ---          │  ← y=53
+  └──────────────────────────┘
+*/
+void mostrarConexion() {
+  bool wifiOk = (WiFi.status() == WL_CONNECTED);
+
+  dispConex.clearBuffer();
+  dispConex.setFont(u8g2_font_6x10_tf);
+  centrar(dispConex, 10, "RED");
+  dispConex.drawHLine(0, 13, 128);
+
+  dispConex.drawStr(0, 27, "WiFi:");
+  dispConex.drawStr(38, 27, wifiOk ? "OK" : "---");
+  if (wifiOk)
+    dispConex.drawStr(0, 39, WiFi.localIP().toString().c_str());
+
+  dispConex.drawStr(0, 53, "API: ");
+  dispConex.drawStr(38, 53, apiOk ? "OK" : "---");
+
+  dispConex.sendBuffer();
+}
+
+// ── Reset WiFi (botón BOOT 3 seg) ─────────────────────────────
+void checkResetButton() {
+  if (digitalRead(RESET_PIN) == LOW) {
+    Serial.println("BOOT presionado — esperando 3 s...");
+    delay(3000);
+    if (digitalRead(RESET_PIN) == LOW) {
+      Serial.println("Borrando credenciales WiFi...");
+      wm.resetSettings();
+      delay(500);
       ESP.restart();
-    }                                                                                        
-                                                            
-    Serial.printf("Conectado — IP: %s\n", WiFi.localIP().toString().c_str());                
-  }
-                                                                                             
-  // ── Loop ───────────────────────────────────────────────────────
-  unsigned long ultimoEnvio = 0;
-                                                                                             
-  void loop() {
-    // Revisar botón de reset en cada ciclo                                                  
-    checkResetButton();                                     
-                                                                                             
-    // Reconectar si se pierde la señal
-    if (WiFi.status() != WL_CONNECTED) {                                                     
-      Serial.println("WiFi perdido — reconectando...");     
-      WiFi.reconnect();                                                                      
-      delay(5000);
-      return;                                                                                
-    }                                                                                        
-   
-    unsigned long ahora = millis();                                                          
-    if (ahora - ultimoEnvio >= INTERVALO_MS) {              
-      ultimoEnvio = ahora;
-
-      sensors_event_t evHumedad, evTemperatura;                                              
-      aht.getEvent(&evHumedad, &evTemperatura);
-                                                                                             
-      float temp = evTemperatura.temperature;               
-      float hum  = evHumedad.relative_humidity;
-
-      if (temp > -10 && temp < 85 && hum >= 0 && hum <= 100) {                               
-        enviarLectura(temp, hum);
-      } else {                                                                               
-        Serial.printf("Lectura inválida descartada: %.1f°C  %.1f%%\n", temp, hum);
-      }                                                                                      
     }
-  } 
+  }
+}
+
+// ── POST a la API ──────────────────────────────────────────────
+void enviarLectura(float temp, float hum) {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.begin(client, API_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  JsonDocument doc;
+  doc["temperature"] = round(temp * 10.0) / 10.0;
+  doc["humidity"]    = round(hum  * 10.0) / 10.0;
+  doc["device_id"]   = DEVICE_ID;
+  String body;
+  serializeJson(doc, body);
+
+  Serial.printf("Enviando → %.1f°C  %.1f%%  ", temp, hum);
+  int codigo = http.POST(body);
+
+  apiOk = (codigo == 200 || codigo == 201);
+  if (apiOk)           Serial.println("OK");
+  else if (codigo > 0) Serial.printf("HTTP %d: %s\n", codigo, http.getString().c_str());
+  else                 Serial.printf("Error: %s\n", http.errorToString(codigo).c_str());
+
+  http.end();
+  mostrarConexion();
+}
+
+// ── Setup ──────────────────────────────────────────────────────
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("\n── PharmaTrack Sensor v2.0 ──");
+
+  pinMode(RESET_PIN, INPUT_PULLUP);
+  checkResetButton();
+
+  // Inicializar los 3 displays
+  dispTemp.begin();
+  dispHum.begin();
+  dispConex.begin();
+
+  mensaje(dispTemp,  "PharmaTrack", "Sensor v2.0");
+  mensaje(dispHum,   "PharmaTrack", "Sensor v2.0");
+  mensaje(dispConex, "Conectando", "al WiFi...");
+
+  // AHT10 comparte Wire (bus 0) con dispTemp; las direcciones no colisionan
+  if (!aht.begin()) {
+    Serial.println("ERROR: AHT10 no detectado. SDA→GPIO8  SCL→GPIO9");
+    mensaje(dispTemp, "ERROR AHT10", "revisa cableado");
+    while (true) delay(1000);
+  }
+  Serial.println("AHT10 OK");
+
+  // WiFiManager
+  wm.setConfigPortalTimeout(180);
+  wm.setConnectTimeout(30);
+  wm.setAPClientCheck(true);
+  wm.setAPCallback([](WiFiManager*) {
+    mensaje(dispConex, "AP abierto:", "PharmaTrack-Sensor");
+  });
+
+  Serial.println("Conectando al WiFi...");
+  if (!wm.autoConnect("PharmaTrack-Sensor")) {
+    Serial.println("Sin WiFi. Reiniciando...");
+    mensaje(dispConex, "Sin WiFi", "Reiniciando...");
+    delay(3000);
+    ESP.restart();
+  }
+
+  Serial.printf("Conectado — IP: %s\n", WiFi.localIP().toString().c_str());
+  mostrarConexion();
+}
+
+// ── Loop ───────────────────────────────────────────────────────
+unsigned long ultimoEnvio = 0;
+
+void loop() {
+  checkResetButton();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi perdido — reconectando...");
+    mostrarConexion();
+    WiFi.reconnect();
+    delay(5000);
+    return;
+  }
+
+  unsigned long ahora = millis();
+  if (ahora - ultimoEnvio >= INTERVALO_MS) {
+    ultimoEnvio = ahora;
+
+    sensors_event_t evHum, evTemp;
+    aht.getEvent(&evHum, &evTemp);
+
+    float temp = evTemp.temperature;
+    float hum  = evHum.relative_humidity;
+
+    if (temp > -10 && temp < 85 && hum >= 0 && hum <= 100) {
+      mostrarTemperatura(temp);
+      mostrarHumedad(hum);
+      enviarLectura(temp, hum);
+    } else {
+      Serial.printf("Lectura invalida descartada: %.1f°C  %.1f%%\n", temp, hum);
+    }
+  }
+}

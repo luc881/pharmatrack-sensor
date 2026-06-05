@@ -4,57 +4,85 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**PharmaTrack Sensor v2.0** — An ESP32-based IoT device that reads temperature and humidity from an AHT10 sensor and POSTs readings every 30 seconds to a remote REST API (`https://api.farmaciaselene.com/api/v1/sensor-readings/`). Designed for pharmacy environment monitoring.
+**PharmaTrack Sensor v2.0** — Firmware para ESP32-C5 que lee temperatura y humedad desde un sensor AHT10 (I2C) y envia las lecturas cada 30 segundos a una API REST via HTTPS. Muestra el estado en 3 pantallas OLED SSD1306. Disenado para monitoreo ambiental en farmacias.
 
-## Build & Flash (Arduino IDE or arduino-cli)
+## Build & Flash
 
 ```bash
-# Compile (arduino-cli)
-arduino-cli compile --fqbn esp32:esp32:esp32 ProyectoTesinaESP32.ino
+# Compilar
+arduino-cli compile --fqbn esp32:esp32:esp32c5 ProyectoTesinaESP32.ino
 
-# Upload to connected ESP32
-arduino-cli upload -p /dev/cu.usbserial-* --fqbn esp32:esp32:esp32 ProyectoTesinaESP32.ino
+# Subir al ESP32-C5
+arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32c5 ProyectoTesinaESP32.ino
 
-# Monitor serial output (115200 baud)
-arduino-cli monitor -p /dev/cu.usbserial-* --config baudrate=115200
+# Monitor serial (115200 baud)
+arduino-cli monitor -p COM3 --config baudrate=115200
 ```
 
-Required board package: `esp32:esp32` (Espressif Systems).
+Board package requerido: `esp32:esp32` (Espressif Systems).
+```bash
+arduino-cli core install esp32:esp32
+```
 
-## Required Libraries
+## Librerias requeridas
 
-Install via Arduino Library Manager or `arduino-cli lib install`:
+Instalar desde Arduino Library Manager o con `arduino-cli lib install`:
 
-- `ArduinoJson` (Benoit Blanchon)
-- `Adafruit AHTX0`
-- `WiFiManager` (tzapu/WiFiManager)
-- `Adafruit BusIO` (dependency of AHTX0)
+| Libreria | Autor |
+|----------|-------|
+| `ArduinoJson` | Benoit Blanchon |
+| `Adafruit AHTX0` | Adafruit |
+| `WiFiManager` | tzapu |
+| `Adafruit BusIO` | Adafruit (dependencia de AHTX0) |
+| `U8g2` | Oliver Kraus (displays OLED) |
 
-## Hardware Wiring
+## Hardware
 
-| AHT10 Pin | ESP32 GPIO |
-|-----------|------------|
-| SDA       | GPIO 8     |
-| SCL       | GPIO 9     |
-| VCC       | 3.3V       |
-| GND       | GND        |
+**AHT10 → ESP32 (I2C bus 0, Wire):**
 
-RESET_PIN = GPIO 0 (BOOT button, built-in).
+| AHT10 | ESP32  |
+|-------|--------|
+| SDA   | GPIO 8 |
+| SCL   | GPIO 9 |
+| VCC   | 3.3V   |
+| GND   | GND    |
 
-## Architecture
+**3x SSD1306 OLED 128x64 — cada display en su propio bus I2C:**
 
-Single `.ino` file with three main responsibilities:
+| Display   | Bus             | SDA    | SCL    | Muestra         |
+|-----------|-----------------|--------|--------|-----------------|
+| dispTemp  | Wire HW I2C 0   | GPIO 8 | GPIO 9 | Temperatura     |
+| dispHum   | Wire1 HW I2C 1  | GPIO 6 | GPIO 7 | Humedad         |
+| dispConex | Software I2C    | GPIO 4 | GPIO 5 | Estado red/API  |
 
-1. **WiFi provisioning** — Uses `WiFiManager` (captive-portal AP `"PharmaTrack-Sensor"`) on first boot or after credentials reset. Portal auto-closes after 3 minutes.
-2. **Sensor polling** — `loop()` reads the AHT10 every `INTERVALO_MS` (30 s) and discards out-of-range values (temp: −10…85 °C, humidity: 0…100 %).
-3. **API POST** — `enviarLectura()` serializes `{temperature, humidity, device_id}` as JSON and POSTs over HTTPS (certificate verification disabled via `setInsecure()`).
+Los 3 displays tienen direccion I2C `0x3C`. Al estar en buses separados no colisionan.
+El AHT10 (dir. `0x38`) comparte bus con `dispTemp` sin conflicto de direcciones.
 
-**WiFi reset flow**: holding the BOOT button (GPIO 0) for 3 seconds calls `wm.resetSettings()` + `ESP.restart()`, clearing saved credentials and re-entering provisioning mode.
+`RESET_PIN = GPIO 0` (boton BOOT integrado en la placa).
 
-## Key Constants
+## Arquitectura
 
-| Constant | Value | Purpose |
-|----------|-------|---------|
-| `API_URL` | `https://api.farmaciaselene.com/api/v1/sensor-readings/` | Backend endpoint |
-| `DEVICE_ID` | `"esp32-farmacia-01"` | Identifies this unit in the API |
-| `INTERVALO_MS` | `30000` | Polling interval (ms) |
+Archivo unico `ProyectoTesinaESP32.ino` con cuatro responsabilidades:
+
+1. **Provisioning WiFi** — En el primer arranque (o tras reset), abre un AP llamado `"PharmaTrack-Sensor"` mediante `WiFiManager`. El usuario configura la red via portal cautivo. El portal se cierra a los 3 minutos (`setConfigPortalTimeout(180)`).
+
+2. **Lectura del sensor** — `loop()` llama a `aht.getEvent()` cada `INTERVALO_MS` (30 s). Las lecturas fuera de rango (`temp < -10` o `> 85 C`; `hum < 0` o `> 100 %`) se descartan sin enviar.
+
+3. **POST a la API** — `enviarLectura()` serializa `{temperature, humidity, device_id}` como JSON y hace POST sobre HTTPS con `WiFiClientSecure` + `setInsecure()` (cert. deshabilitado). Actualiza el flag `apiOk` y refresca `dispConex` tras cada envio.
+
+4. **Displays OLED** — `mostrarTemperatura()`, `mostrarHumedad()`, `mostrarConexion()` gestionan cada pantalla con U8g2 (clearBuffer → dibujar → sendBuffer). `centrar()` calcula el offset X para texto centrado en 128 px. `mensaje()` es un splash reutilizado en boot y errores.
+
+**Reset de credenciales WiFi:** mantener BOOT (GPIO 0) presionado 3 s llama a `wm.resetSettings()` + `ESP.restart()`, volviendo al modo de provisioning.
+
+## Constantes configurables
+
+| Constante     | Valor por defecto                                              | Descripcion             |
+|---------------|----------------------------------------------------------------|-------------------------|
+| `API_URL`     | `https://api.farmaciaselene.com/api/v1/sensor-readings/`      | Endpoint de la API      |
+| `DEVICE_ID`   | `"esp32-farmacia-01"`                                          | ID del dispositivo      |
+| `INTERVALO_MS`| `30000`                                                        | Intervalo de muestreo   |
+
+## Archivos ignorados por git
+
+- `secrets.h` / `config_local.h` — credenciales o configuracion local sensible
+- `build/`, `*.bin`, `*.elf`, `*.map`, `*.hex` — artefactos de compilacion
