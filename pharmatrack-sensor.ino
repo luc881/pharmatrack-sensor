@@ -17,8 +17,8 @@ const unsigned long INTERVALO_MS = 30000;
 #define SCL_PIN   9
 #define SDA0_PIN  25   // SW I2C — Display Temperatura
 #define SCL0_PIN  26
-#define SDA1_PIN  6    // Wire1  — Display Humedad
-#define SCL1_PIN  7
+#define SDA1_PIN  20   // SW I2C — Display Humedad
+#define SCL1_PIN  21
 #define SDA2_PIN  4    // SW I2C — Display Conexion
 #define SCL2_PIN  5
 #define RESET_PIN 0
