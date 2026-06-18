@@ -10,10 +10,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Compilar
-arduino-cli compile --fqbn esp32:esp32:esp32c5 ProyectoTesinaESP32.ino
+arduino-cli compile --fqbn esp32:esp32:esp32c5 pharmatrack-sensor.ino
 
 # Subir al ESP32-C5
-arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32c5 ProyectoTesinaESP32.ino
+arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32c5 pharmatrack-sensor.ino
 
 # Monitor serial (115200 baud)
 arduino-cli monitor -p COM3 --config baudrate=115200
@@ -62,7 +62,7 @@ El AHT10 (dir. `0x38`) comparte bus con `dispTemp` sin conflicto de direcciones.
 
 ## Arquitectura
 
-Archivo unico `ProyectoTesinaESP32.ino` con cuatro responsabilidades:
+Archivo unico `pharmatrack-sensor.ino` con cuatro responsabilidades:
 
 1. **Provisioning WiFi** — En el primer arranque (o tras reset), abre un AP llamado `"PharmaTrack-Sensor"` mediante `WiFiManager`. El usuario configura la red via portal cautivo. El portal se cierra a los 3 minutos (`setConfigPortalTimeout(180)`).
 
