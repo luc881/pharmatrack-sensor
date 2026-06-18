@@ -68,7 +68,7 @@ void mostrarTemperatura(float val) {
   dispTemp.setFont(u8g2_font_6x10_tf);
   centrar(dispTemp, 10, "TEMP (C)");
   dispTemp.drawHLine(0, 13, 128);
-  dispTemp.setFont(u8g2_font_logisoso32_tf);
+  dispTemp.setFont(u8g2_font_logisoso32_mn);
   centrar(dispTemp, 54, num);
   dispTemp.sendBuffer();
 }
@@ -81,7 +81,7 @@ void mostrarHumedad(float val) {
   dispHum.setFont(u8g2_font_6x10_tf);
   centrar(dispHum, 10, "HUMEDAD (%)");
   dispHum.drawHLine(0, 13, 128);
-  dispHum.setFont(u8g2_font_logisoso32_tf);
+  dispHum.setFont(u8g2_font_logisoso32_mn);
   centrar(dispHum, 54, num);
   dispHum.sendBuffer();
 }
