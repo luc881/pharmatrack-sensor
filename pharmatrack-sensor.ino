@@ -24,9 +24,9 @@ const unsigned long INTERVALO_MS = 30000;
 #define RESET_PIN 0
 
 // ── Displays SSD1306 128x64 (U8g2) ────────────────────────────
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C      dispTemp (U8G2_R0, SCL0_PIN, SDA0_PIN, U8X8_PIN_NONE);
-U8G2_SSD1306_128X64_NONAME_F_2ND_HW_I2C  dispHum  (U8G2_R0, U8X8_PIN_NONE);
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C      dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C dispTemp (U8G2_R0, SCL0_PIN, SDA0_PIN, U8X8_PIN_NONE);
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C dispHum  (U8G2_R0, SCL1_PIN, SDA1_PIN, U8X8_PIN_NONE);
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
 
 // ── Objetos ────────────────────────────────────────────────────
 Adafruit_AHTX0 aht;
@@ -138,9 +138,6 @@ void setup() {
   checkResetButton();
 
   delay(500);
-
-  // Wire1 para dispHum antes de inicializar displays
-  Wire1.begin(SDA1_PIN, SCL1_PIN);
 
   Serial.println("Iniciando displays...");
   dispTemp.begin();
