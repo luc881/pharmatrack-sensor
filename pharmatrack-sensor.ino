@@ -1,20 +1,31 @@
-#include <U8g2lib.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C display(U8G2_R0, 3, 2, U8X8_PIN_NONE);
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("Iniciando display GPIO2/3...");
+  Serial.println("Test display GPIO2(SDA) / GPIO3(SCL)");
 
-  display.begin();
-  Serial.println("begin() OK");
+  Wire.begin(2, 3);
 
-  display.clearBuffer();
-  display.setFont(u8g2_font_6x10_tf);
-  display.drawStr(30, 35, "HUMEDAD");
-  display.sendBuffer();
-  Serial.println("Listo.");
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("Error 0x3C, probando 0x3D...");
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
+      Serial.println("No responde en ninguna direccion.");
+      return;
+    }
+  }
+
+  Serial.println("Display OK!");
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(20, 24);
+  display.println("HUMEDAD");
+  display.display();
 }
 
 void loop() {}
