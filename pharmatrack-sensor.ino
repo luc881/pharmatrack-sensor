@@ -27,7 +27,7 @@ const unsigned long INTERVALO_MS = 30000;
 
 // ── Displays SH1106 128x64 (U8g2) ─────────────────────────────
 U8G2_SH1106_128X64_NONAME_F_HW_I2C     dispTemp (U8G2_R0, U8X8_PIN_NONE, SCL_PIN,  SDA_PIN);
-U8G2_SH1106_128X64_NONAME_F_2ND_HW_I2C dispHum  (U8G2_R0, U8X8_PIN_NONE, SCL1_PIN, SDA1_PIN);
+U8G2_SH1106_128X64_NONAME_F_2ND_HW_I2C dispHum  (U8G2_R0, U8X8_PIN_NONE);
 U8G2_SH1106_128X64_NONAME_F_SW_I2C     dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
 
 // ── Objetos ────────────────────────────────────────────────────
@@ -168,6 +168,7 @@ void setup() {
   checkResetButton();
 
   // Inicializar los 3 displays
+  Wire1.begin(SDA1_PIN, SCL1_PIN);  // Pines de Wire1 para dispHum
   dispTemp.begin();
   dispHum.begin();
   dispConex.begin();
