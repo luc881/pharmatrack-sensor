@@ -13,22 +13,25 @@ const char* DEVICE_ID = "esp32-farmacia-01";
 const unsigned long INTERVALO_MS = 30000;
 
 // ── Pines ──────────────────────────────────────────────────────
-// Bus 0 (Wire, HW I2C): AHT10 (0x38) + dispTemp (0x3C) — no colisionan
+// Wire (HW I2C 0): AHT10 unicamente
 #define SDA_PIN   8
 #define SCL_PIN   9
+// Display Temperatura — Software I2C
+#define SDA0_PIN  10
+#define SCL0_PIN  11
 // Display Humedad — HW I2C bus 1 (Wire1)
 #define SDA1_PIN  6
 #define SCL1_PIN  7
-// Display Conexion — Software I2C bit-bang
+// Display Conexion — Software I2C
 #define SDA2_PIN  4
 #define SCL2_PIN  5
 // Boton BOOT
 #define RESET_PIN 0
 
 // ── Displays SH1106 128x64 (U8g2) ─────────────────────────────
-U8G2_SH1106_128X64_NONAME_F_HW_I2C     dispTemp (U8G2_R0, U8X8_PIN_NONE, SCL_PIN,  SDA_PIN);
-U8G2_SH1106_128X64_NONAME_F_2ND_HW_I2C dispHum  (U8G2_R0, U8X8_PIN_NONE);
-U8G2_SH1106_128X64_NONAME_F_SW_I2C     dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_SW_I2C      dispTemp (U8G2_R0, SCL0_PIN, SDA0_PIN, U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_2ND_HW_I2C  dispHum  (U8G2_R0, U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_SW_I2C      dispConex(U8G2_R0, SCL2_PIN, SDA2_PIN, U8X8_PIN_NONE);
 
 // ── Objetos ────────────────────────────────────────────────────
 Adafruit_AHTX0 aht;

@@ -49,14 +49,14 @@ Instalar desde Arduino Library Manager o con `arduino-cli lib install`:
 
 **3x SSD1306 OLED 128x64 — cada display en su propio bus I2C:**
 
-| Display   | Bus             | SDA    | SCL    | Muestra         |
-|-----------|-----------------|--------|--------|-----------------|
-| dispTemp  | Wire HW I2C 0   | GPIO 8 | GPIO 9 | Temperatura     |
-| dispHum   | Wire1 HW I2C 1  | GPIO 6 | GPIO 7 | Humedad         |
-| dispConex | Software I2C    | GPIO 4 | GPIO 5 | Estado red/API  |
+| Display   | Bus             | SDA     | SCL     | Muestra         |
+|-----------|-----------------|---------|---------|-----------------|
+| dispTemp  | Software I2C    | GPIO 10 | GPIO 11 | Temperatura     |
+| dispHum   | Wire1 HW I2C 1  | GPIO 6  | GPIO 7  | Humedad         |
+| dispConex | Software I2C    | GPIO 4  | GPIO 5  | Estado red/API  |
 
 Los 3 displays tienen direccion I2C `0x3C`. Al estar en buses separados no colisionan.
-El AHT10 (dir. `0x38`) comparte bus con `dispTemp` sin conflicto de direcciones.
+El AHT10 usa Wire (GPIO 8/9) en forma exclusiva, sin compartir bus con ningun display.
 
 `RESET_PIN = GPIO 0` (boton BOOT integrado en la placa).
 
