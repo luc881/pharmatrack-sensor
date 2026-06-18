@@ -170,15 +170,26 @@ void setup() {
   pinMode(RESET_PIN, INPUT_PULLUP);
   checkResetButton();
 
-  // Inicializar los 3 displays
-  Wire1.begin(SDA1_PIN, SCL1_PIN);  // Pines de Wire1 para dispHum
-  dispTemp.begin();
-  dispHum.begin();
-  dispConex.begin();
+  // Pequeña espera para que los displays arranquen tras el encendido
+  delay(500);
 
-  mensaje(dispTemp,  "PharmaTrack", "Sensor v2.0");
-  mensaje(dispHum,   "PharmaTrack", "Sensor v2.0");
+  // Inicializar los 3 displays
+  Wire1.begin(SDA1_PIN, SCL1_PIN);
+
+  Serial.println("Iniciando dispTemp (GPIO25/26)...");
+  dispTemp.begin();
+  mensaje(dispTemp, "PharmaTrack", "Sensor v2.0");
+  Serial.println("dispTemp OK");
+
+  Serial.println("Iniciando dispHum (GPIO6/7)...");
+  dispHum.begin();
+  mensaje(dispHum, "PharmaTrack", "Sensor v2.0");
+  Serial.println("dispHum OK");
+
+  Serial.println("Iniciando dispConex (GPIO4/5)...");
+  dispConex.begin();
   mensaje(dispConex, "Conectando", "al WiFi...");
+  Serial.println("dispConex OK");
 
   // AHT10 comparte Wire con dispTemp; 0x38 != 0x3C, sin conflicto
   if (!aht.begin()) {
