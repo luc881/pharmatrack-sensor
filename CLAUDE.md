@@ -51,7 +51,7 @@ Instalar desde Arduino Library Manager o con `arduino-cli lib install`:
 
 | Display   | Bus             | SDA     | SCL     | Muestra         |
 |-----------|-----------------|---------|---------|-----------------|
-| dispTemp  | Software I2C    | GPIO 25 | GPIO 26 | Temperatura     |
+| dispTemp  | Software I2C    | GPIO 18 | GPIO 19 | Temperatura     |
 | dispHum   | Wire1 HW I2C 1  | GPIO 6  | GPIO 7  | Humedad         |
 | dispConex | Software I2C    | GPIO 4  | GPIO 5  | Estado red/API  |
 
