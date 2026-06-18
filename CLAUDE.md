@@ -34,8 +34,7 @@ Instalar desde Arduino Library Manager o con `arduino-cli lib install`:
 | `Adafruit AHTX0` | Adafruit |
 | `WiFiManager` | tzapu |
 | `Adafruit BusIO` | Adafruit (dependencia de AHTX0) |
-| `Adafruit GFX Library` | Adafruit (base grafica) |
-| `Adafruit SH1106` | wonho-maker (driver displays OLED) |
+| `U8g2` | Oliver Kraus (displays OLED SH1106) |
 
 ## Hardware
 
