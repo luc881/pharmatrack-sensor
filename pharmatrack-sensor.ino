@@ -1,4 +1,3 @@
-#include <Wire.h>
 #include <U8g2lib.h>
 
 // Display Humedad — GPIO 6 (SDA), GPIO 7 (SCL)
@@ -12,21 +11,6 @@ void setup() {
   delay(1000);
   Serial.println("\n-- Test display GPIO6/GPIO7 --");
 
-  // Escanear I2C para verificar que el display responde
-  Wire.begin(SDA_PIN, SCL_PIN);
-  Serial.println("Escaneando I2C...");
-  bool encontrado = false;
-  for (byte addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
-    if (Wire.endTransmission() == 0) {
-      Serial.printf("  Dispositivo en 0x%02X\n", addr);
-      encontrado = true;
-    }
-  }
-  if (!encontrado) Serial.println("  Ningun dispositivo encontrado.");
-
-  // Inicializar y mostrar texto
-  Serial.println("Iniciando display...");
   display.begin();
   Serial.println("begin() OK");
 
