@@ -17,7 +17,7 @@
 #define SCL_CONEX   5
 #define SDA_AHT     8
 #define SCL_AHT     9
-#define RESET_PIN   0
+#define RESET_PIN  28
 
 const char*         API_URL      = "https://api.farmaciaselene.com/api/v1/sensor-readings";
 const char*         DEVICE_ID    = "esp32-farmacia-01";
@@ -138,6 +138,21 @@ void enviarLectura(float temp, float hum) {
   mostrarConexion();
 }
 
+// El nodo puede arrancar antes que el módem (p. ej. tras un corte de luz):
+// si no hay red, reintenta con las credenciales guardadas por WiFiManager
+void revisarWiFi() {
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin();
+  }
+  bool ok = WiFi.status() == WL_CONNECTED;
+  if (ok != wifiOk) {
+    wifiOk = ok;
+    if (!ok) apiOk = false;
+    mostrarConexion();
+  }
+}
+
 void leerYEnviar() {
   Wire.end(); Wire.begin(SDA_AHT, SCL_AHT);
   sensors_event_t humEv, tempEv;
@@ -228,6 +243,7 @@ void loop() {
 
   if (ahtOk && millis() - ultimaLectura >= INTERVALO_MS) {
     ultimaLectura = millis();
+    revisarWiFi();
     leerYEnviar();
   }
 }
